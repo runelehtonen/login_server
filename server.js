@@ -1,17 +1,15 @@
-// mongodb
 require("./config/db");
 
-const app = require("express")();
+const express = require("express");
+const bodyParser = require("express").json;
+
+const app = express();
 const port = process.env.PORT || 3000;
 
-const UserRouter = require("./api/User");
+const userRouter = require("./api/User");
 
-// For accepting json data in the request body
-const bodyParser = require("express").json;
 app.use(bodyParser());
-
-// Routes
-app.use("/user", UserRouter);
+app.use("/user", userRouter);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

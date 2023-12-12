@@ -1,11 +1,38 @@
 const express = require("express");
 const router = express.Router();
+const jwt = require("jsonwebtoken");
+const jwtSecret = process.env.JWT_SECRET;
 
 // mongodb user model
 const User = require("../models/User");
 
 // Password hashing
 const bcrypt = require("bcrypt");
+
+// Middleware to verify the token
+function verifyToken(req, res, next) {
+  const token = req.headers.authorization;
+
+  if (!token) {
+    return res.status(403).json({
+      status: "FAILED",
+      message: "No token provided",
+    });
+  }
+
+  jwt.verify(token, jwtSecret, (err, decoded) => {
+    if (err) {
+      return res.status(401).json({
+        status: "FAILED",
+        message: "Failed to authenticate token",
+      });
+    }
+
+    // Save user information in request for further use
+    req.user = decoded;
+    next();
+  });
+}
 
 // Signup
 router.post("/signup", (req, res) => {
@@ -67,10 +94,22 @@ router.post("/signup", (req, res) => {
           user
             .save()
             .then((result) => {
+              const token = jwt.sign(
+                { userId: result._id, email: result.email },
+                jwtSecret
+              ); // Generate token
               res.json({
                 status: "SUCCESS",
                 message: "Signup was successful!",
-                data: result,
+                data: {
+                  token,
+                  user: {
+                    userId: result._id,
+                    name: result.name,
+                    email: result.email,
+                    // other user details
+                  },
+                },
               });
             })
             .catch((err) => {
@@ -112,10 +151,22 @@ router.post("/signin", (req, res) => {
           const hashedPassword = data[0].password;
           if (bcrypt.compareSync(password, hashedPassword)) {
             // Correct password
+            const token = jwt.sign(
+              { userId: data[0]._id, email: data[0].email },
+              jwtSecret
+            );
             res.json({
               status: "SUCCESS",
               message: "Signin successful!",
-              data: data,
+              data: {
+                token,
+                user: {
+                  userId: data[0]._id,
+                  name: data[0].name,
+                  email: data[0].email,
+                  // other user details
+                },
+              },
             });
           } else {
             res.json({
@@ -139,6 +190,88 @@ router.post("/signin", (req, res) => {
         });
       });
   }
+});
+
+// Fetch user information
+router.get("/profile/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        res.json({
+          status: "SUCCESS",
+          message: "User information retrieved successfully",
+          data: user,
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while fetching user information",
+      });
+    });
+});
+
+// Update user information
+router.put("/update/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+  const { name, email, dateOfBirth, password } = req.body;
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        // Update user fields
+        user.name = name || user.name;
+        user.email = email || user.email;
+        user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+
+        if (password) {
+          // Update password if provided
+          const salt = bcrypt.genSaltSync(10);
+          const hash = bcrypt.hashSync(password, salt);
+          user.password = hash;
+        }
+
+        // Save updated user
+        user
+          .save()
+          .then((result) => {
+            res.json({
+              status: "SUCCESS",
+              message: "User information updated successfully",
+              data: result,
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            res.json({
+              status: "FAILED",
+              message:
+                "An error occurred while saving updated user information",
+            });
+          });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while updating user information",
+      });
+    });
 });
 
 module.exports = router;
