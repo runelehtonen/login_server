@@ -223,7 +223,140 @@ router.get("/profile/:userId", verifyToken, (req, res) => {
 // Update user information
 router.put("/update/:userId", verifyToken, (req, res) => {
   const userId = req.params.userId;
-  const { name, email, dateOfBirth, password } = req.body;
+  const {
+    name,
+    email,
+    dateOfBirth,
+    password,
+    address,
+    zipCode,
+    city,
+    phone,
+    regNu,
+  } = req.body;
+
+  // Validation checks
+  if (!name || name.trim() === "") {
+    res.json({
+      status: "FAILED",
+      message: "Name cannot be empty!",
+    });
+  } else if (!/^[a-zA-ZæøåÆØÅ ]*$/.test(name)) {
+    res.json({
+      status: "FAILED",
+      message: "Invalid name entered!",
+    });
+  } else if (email && !/^[\wæøåÆØÅ.]+@([\w-]+\.)+[\w-]{2,4}$/.test(email)) {
+    res.json({
+      status: "FAILED",
+      message: "Invalid email entered!",
+    });
+  } else if (dateOfBirth && !new Date(dateOfBirth).getTime()) {
+    res.json({
+      status: "FAILED",
+      message: "Invalid date of birth entered",
+    });
+  } else if (password && password.trim() !== "" && password.length < 8) {
+    res.json({
+      status: "FAILED",
+      message: "Password is too short!",
+    });
+  } else if (
+    phone &&
+    !/^\+?[0-9]+$/.test(phone) // Example phone validation, adjust as needed
+  ) {
+    res.json({
+      status: "FAILED",
+      message: "Invalid phone number!",
+    });
+  } else if (
+    zipCode &&
+    !/^\d{4}$/.test(zipCode) // Example zip code validation, adjust as needed
+  ) {
+    res.json({
+      status: "FAILED",
+      message: "Invalid zip code!",
+    });
+  } else {
+    User.findById(userId)
+      .then((user) => {
+        if (!user) {
+          res.json({
+            status: "FAILED",
+            message: "User not found",
+          });
+        } else {
+          // Update user fields
+          user.name = name || user.name;
+          user.email = email || user.email;
+          user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+          user.address = address || user.address;
+          user.zipCode = zipCode || user.zipCode;
+          user.city = city || user.city;
+          user.phone = phone || user.phone;
+          user.regNu = regNu || user.regNu;
+
+          if (password) {
+            // Update password if provided
+            const salt = bcrypt.genSaltSync(10);
+            const hash = bcrypt.hashSync(password, salt);
+            user.password = hash;
+          }
+
+          // Save updated user
+          user
+            .save()
+            .then((result) => {
+              res.json({
+                status: "SUCCESS",
+                message: "User information updated successfully",
+                data: result,
+              });
+            })
+            .catch((err) => {
+              console.log(err);
+              res.json({
+                status: "FAILED",
+                message:
+                  "An error occurred while saving updated user information",
+              });
+            });
+        }
+      })
+      .catch((err) => {
+        console.log(err);
+        res.json({
+          status: "FAILED",
+          message: "An error occurred while updating user information",
+        });
+      });
+  }
+});
+
+// Delete user
+router.delete("/delete/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+
+  User.findByIdAndDelete(userId)
+    .then(() => {
+      res.json({
+        status: "SUCCESS",
+        message: "User deleted successfully",
+      });
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while deleting the user",
+      });
+    });
+});
+
+// Change password
+router.post("/change-password", verifyToken, (req, res) => {
+  const userId = req.user.userId; // Get the userId from the token
+  const { currentPassword, newPassword } = req.body;
 
   User.findById(userId)
     .then((user) => {
@@ -233,43 +366,42 @@ router.put("/update/:userId", verifyToken, (req, res) => {
           message: "User not found",
         });
       } else {
-        // Update user fields
-        user.name = name || user.name;
-        user.email = email || user.email;
-        user.dateOfBirth = dateOfBirth || user.dateOfBirth;
+        const hashedPassword = user.password;
 
-        if (password) {
-          // Update password if provided
+        if (bcrypt.compareSync(currentPassword, hashedPassword)) {
           const salt = bcrypt.genSaltSync(10);
-          const hash = bcrypt.hashSync(password, salt);
-          user.password = hash;
-        }
+          const hash = bcrypt.hashSync(newPassword, salt);
 
-        // Save updated user
-        user
-          .save()
-          .then((result) => {
-            res.json({
-              status: "SUCCESS",
-              message: "User information updated successfully",
-              data: result,
+          user.password = hash;
+
+          user
+            .save()
+            .then((result) => {
+              res.json({
+                status: "SUCCESS",
+                message: "Password changed successfully",
+              });
+            })
+            .catch((err) => {
+              console.log(err);
+              res.json({
+                status: "FAILED",
+                message: "An error occurred while saving updated password",
+              });
             });
-          })
-          .catch((err) => {
-            console.log(err);
-            res.json({
-              status: "FAILED",
-              message:
-                "An error occurred while saving updated user information",
-            });
+        } else {
+          res.json({
+            status: "FAILED",
+            message: "Invalid current password",
           });
+        }
       }
     })
     .catch((err) => {
       console.log(err);
       res.json({
         status: "FAILED",
-        message: "An error occurred while updating user information",
+        message: "An error occurred while changing the password",
       });
     });
 });

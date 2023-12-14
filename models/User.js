@@ -7,6 +7,26 @@ const userSchema = new Schema(
     email: String,
     password: String,
     dateOfBirth: Date,
+    address: {
+      type: String,
+      default: "",
+    },
+    zipCode: {
+      type: String,
+      default: "",
+    },
+    city: {
+      type: String,
+      default: "",
+    },
+    phone: {
+      type: String,
+      default: "",
+    },
+    regNu: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
