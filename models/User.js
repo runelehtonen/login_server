@@ -27,6 +27,50 @@ const userSchema = new Schema(
       type: String,
       default: "",
     },
+    notificationSettings: {
+      receiveSMSActive: {
+        type: Boolean,
+        default: false,
+      },
+      receiveNotificationsActive: {
+        type: Boolean,
+        default: false,
+      },
+      receiveSMSExpiring: {
+        type: Boolean,
+        default: false,
+      },
+      receiveNotificationsExpiring: {
+        type: Boolean,
+        default: false,
+      },
+      receiveEmailReceipts: {
+        type: Boolean,
+        default: false,
+      },
+      receiveNotificationsMarketing: {
+        type: Boolean,
+        default: false,
+      },
+      activeParkingHours: {
+        type: Number,
+        default: 15,
+      },
+      expiringSoonHours: {
+        type: Number,
+        default: 15,
+      },
+    },
+    preferenceSettings: {
+      darkMode: {
+        type: Boolean,
+        default: false,
+      },
+      language: {
+        type: String,
+        default: "danish",
+      },
+    },
   },
   { timestamps: true }
 );

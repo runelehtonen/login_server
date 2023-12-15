@@ -406,4 +406,160 @@ router.post("/change-password", verifyToken, (req, res) => {
     });
 });
 
+// Route to fetch notification settings
+router.get("/notification-settings/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        const notificationSettings = user.notificationSettings;
+        res.json({
+          status: "SUCCESS",
+          message: "Notification settings retrieved successfully",
+          data: { notificationSettings },
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while fetching notification settings",
+      });
+    });
+});
+
+// Update notification settings
+router.put("/update-notification-settings/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+  const { notificationSettings } = req.body;
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        // Update notification settings
+        user.notificationSettings = {
+          ...user.notificationSettings,
+          ...notificationSettings,
+        };
+
+        // Save updated user
+        user
+          .save()
+          .then((result) => {
+            res.json({
+              status: "SUCCESS",
+              message: "Notification settings updated successfully",
+              data: result.notificationSettings,
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            res.json({
+              status: "FAILED",
+              message:
+                "An error occurred while saving updated notification settings",
+            });
+          });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while updating notification settings",
+      });
+    });
+});
+
+// Fetch preference settings
+router.get("/preference-settings/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+
+  console.log(`Fetching preference settings for user ID: ${userId}`);
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        const preferenceSettings = user.preferenceSettings;
+        res.json({
+          status: "SUCCESS",
+          message: "Preference settings retrieved successfully",
+          data: { preferenceSettings },
+        });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while fetching preference settings",
+      });
+    });
+});
+
+// Update preference settings
+router.put("/update-preference-settings/:userId", verifyToken, (req, res) => {
+  const userId = req.params.userId;
+  const { preferenceSettings } = req.body;
+
+  User.findById(userId)
+    .then((user) => {
+      if (!user) {
+        res.json({
+          status: "FAILED",
+          message: "User not found",
+        });
+      } else {
+        // Update preference settings
+        user.preferenceSettings = {
+          ...user.preferenceSettings,
+          ...preferenceSettings,
+        };
+
+        // Save updated user
+        user
+          .save()
+          .then((result) => {
+            res.json({
+              status: "SUCCESS",
+              message: "Preference settings updated successfully",
+              data: result.preferenceSettings,
+            });
+          })
+          .catch((err) => {
+            console.log(err);
+            res.json({
+              status: "FAILED",
+              message:
+                "An error occurred while saving updated preference settings",
+            });
+          });
+      }
+    })
+    .catch((err) => {
+      console.log(err);
+      res.json({
+        status: "FAILED",
+        message: "An error occurred while updating preference settings",
+      });
+    });
+});
+
 module.exports = router;
